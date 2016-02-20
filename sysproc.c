@@ -89,3 +89,32 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+//Aditya: Set the number of tickets for a particular process
+int
+sys_setnumtickets(void)
+{
+    int tckt;
+    if(argint(0, &tckt) < 0)
+        return -1;
+    //cprintf("Ticket num form uspace: %d \n", tckt);
+
+    proc->num_tickets = tckt;
+    adjust_ticket_range(proc); 
+
+    cprintf("Num of tickets for process PID %d set to: %d \n", proc->pid, proc->num_tickets);
+
+    return proc->num_tickets;
+}
+
+//Adi: return how many system calls have been executed 
+int
+sys_getsyscallno(void)
+{
+   uint syscallno;
+
+   syscallno = proc->syscallnum;
+
+   return syscallno;
+}
+

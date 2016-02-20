@@ -66,6 +66,9 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+  int num_tickets;             //Aditya - Number of tickets
+  int ticket_range;            //Aditya - Range of ticket numbers for the current process
+  int syscallnum;              //Aditya - Syscallnumber variable
 };
 
 // Process memory is laid out contiguously, low addresses first:
@@ -73,3 +76,6 @@ struct proc {
 //   original data and bss
 //   fixed-size stack
 //   expandable heap
+
+
+int global_tick_sum;

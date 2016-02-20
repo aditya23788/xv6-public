@@ -118,6 +118,9 @@ void            userinit(void);
 int             wait(void);
 void            wakeup(void*);
 void            yield(void);
+int             setnumtickets(void);
+void            adjust_ticket_range(struct proc *curr_proc);
+int             getsyscallno(void);
 
 // swtch.S
 void            swtch(struct context**, struct context*);

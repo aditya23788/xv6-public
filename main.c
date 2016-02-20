@@ -59,6 +59,7 @@ mpmain(void)
   idtinit();       // load idt register
   xchg(&cpu->started, 1); // tell startothers() we're up
   scheduler();     // start running processes
+  global_tick_sum = 0;
 }
 
 pde_t entrypgdir[];  // For entry.S

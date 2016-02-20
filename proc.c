@@ -15,6 +15,7 @@ struct {
 static struct proc *initproc;
 
 int nextpid = 1;
+uint randtick = 0;
 extern void forkret(void);
 extern void trapret(void);
 
@@ -47,6 +48,10 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
+  p->syscallnum = 0;
+  p->num_tickets = MAXNUMTICKET/NPROC;
+  p->ticket_range = global_tick_sum+1;
+  global_tick_sum = global_tick_sum + p->num_tickets;
   release(&ptable.lock);
 
   // Allocate kernel stack.
@@ -271,16 +276,25 @@ scheduler(void)
     // Enable interrupts on this processor.
     sti();
 
+    //cprintf("Global tick sum = %d \n", global_tick_sum);
+    if(global_tick_sum > 0){
+        //acquire(&tickslock);
+          randtick = ticks%global_tick_sum;
+        //release(&tickslock);
+        //cprintf("Randn = %d \n", randtick);
+    }
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->state != RUNNABLE)
         continue;
 
+      if((randtick >= p->ticket_range) && (randtick<=(p->ticket_range+p->num_tickets-1))){
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
-      proc = p;
+      cprintf("Randn = %d, PID = %d\n", randtick, p->pid);
+      proc = p;      
       switchuvm(p);
       p->state = RUNNING;
       swtch(&cpu->scheduler, proc->context);
@@ -289,11 +303,13 @@ scheduler(void)
       // Process is done running for now.
       // It should have changed its p->state before coming back.
       proc = 0;
-    }
+      }
+      }
+    
     release(&ptable.lock);
-
   }
 }
+
 
 // Enter scheduler.  Must hold only ptable.lock
 // and have changed proc->state.
@@ -463,4 +479,25 @@ procdump(void)
     }
     cprintf("\n");
   }
+}
+
+//Aditya: Adjust the ticket range for other process if the number
+//of tickets are changed for the current process from userspace
+void
+adjust_ticket_range(struct proc *curr_proc)
+{
+   struct proc *p;
+   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+         if(p->ticket_range > curr_proc->ticket_range) {
+                p->ticket_range = p->ticket_range + curr_proc->num_tickets;
+                cprintf("Adjust tick range++ PID: %d, ticket range: %d \n",p->pid, p->ticket_range); 
+         }
+   }
+
+   
+   global_tick_sum += curr_proc->num_tickets-(MAXNUMTICKET/NPROC); 
+   //for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+         //cprintf("Adjust tick range++ PID: %d, ticket range: %d \n",p->pid, p->ticket_range);
+   //}
+   cprintf("Global tick sum: %d \n",global_tick_sum);
 }
